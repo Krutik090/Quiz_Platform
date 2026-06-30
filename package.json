@@ -1,0 +1,23 @@
+{
+  "name": "tribastion-quiz-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tribastion — real-time enterprise quiz platform (MERN + TypeScript)",
+  "workspaces": [
+    "apps/server",
+    "apps/client",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/server & npm run dev --workspace=apps/client",
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:client": "npm run dev --workspace=apps/client",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/server && npm run build --workspace=apps/client",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "test": "npm run test --workspace=apps/server && npm run test --workspace=apps/client",
+    "lint": "npm run lint --workspace=apps/server && npm run lint --workspace=apps/client"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
