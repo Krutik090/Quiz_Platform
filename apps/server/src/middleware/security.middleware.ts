@@ -21,7 +21,11 @@ export const helmetMiddleware = helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       mediaSrc: ["'self'", "https:", "blob:"],
-      connectSrc: ["'self'", env.CLIENT_URL],
+      // CLIENT_URL is documented as a single URL, but Helmet hard-crashes the process if any
+      // CSP source token isn't a valid single expression — splitting defensively means a
+      // misconfigured (e.g. comma-joined) value degrades gracefully instead of taking the
+      // whole server down.
+      connectSrc: ["'self'", ...env.CLIENT_URL.split(",").map((o) => o.trim())],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],

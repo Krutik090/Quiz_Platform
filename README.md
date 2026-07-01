@@ -76,7 +76,9 @@ cp apps/server/.env.example apps/server/.env   # fill in real secrets
 docker compose up --build
 ```
 
-This starts MongoDB, Redis, the API server, an Nginx container serving the built client and reverse-proxying `/api`, `/uploads`, `/socket.io`, and `/health` to the server, and a Caddy container that terminates TLS and automatically provisions a Let's Encrypt certificate for the domain configured in `Caddyfile`. `NODE_ENV=production` makes cookies `Secure`, which requires HTTPS — that's what Caddy is for. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full step-by-step VPS walkthrough.
+This starts MongoDB, Redis, the API server, an Nginx container serving the built client and reverse-proxying `/api`, `/uploads`, `/socket.io`, and `/health` to the server, and a Caddy container that terminates TLS and automatically provisions a Let's Encrypt certificate for the domain configured in `Caddyfile`. `NODE_ENV=production` makes cookies `Secure`, which requires HTTPS — that's what Caddy is for.
+
+**On a small VPS (≤1-2GB RAM), don't run `--build` on the box itself** — building two app images (npm install + tsc + Vite) can OOM it. Use `scripts/deploy-build.sh` locally and `scripts/deploy-load.sh` on the VPS instead; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full walkthrough including a swap-file setup step.
 
 ## Docs
 

@@ -1,4 +1,3 @@
-import "@/types/express.d";
 import http from "http";
 import { env } from "@/config/env";
 import { logger } from "@/lib/logger";

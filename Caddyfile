@@ -1,4 +1,13 @@
-your-domain.com {
+{
+  # HTTP/3 (QUIC) needs UDP receive buffers far larger than this VPS's kernel allows by
+  # default and Cloudflare doesn't speak it to origins anyway — disabling it removes a real
+  # source of TLS-handshake instability under memory pressure.
+  servers {
+    protocols h1 h2
+  }
+}
+
+quiz.tribastion.online {
   reverse_proxy client:80
 
   encode gzip

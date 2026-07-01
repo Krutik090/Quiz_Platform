@@ -2,6 +2,10 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    # Caps WiredTiger's cache so Mongo doesn't grab the default (RAM-1GB)/2 — fine on a big
+    # box, but on a 1GB VPS that leaves almost nothing for everything else.
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    mem_limit: 400m
     volumes:
       - mongo-data:/data/db
     healthcheck:
@@ -13,7 +17,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
+    mem_limit: 150m
     volumes:
       - redis-data:/data
     healthcheck:
@@ -23,15 +28,18 @@ services:
       retries: 5
 
   server:
+    image: tribastion-server:latest
     build:
       context: .
       dockerfile: apps/server/Dockerfile
     restart: unless-stopped
-    env_file:
-      - apps/server/.env
     environment:
+      NODE_OPTIONS: --max-old-space-size=192
       MONGO_URI: mongodb://mongo:27017/tribastion
       REDIS_URL: redis://redis:6379
+    env_file:
+      - apps/server/.env
+    mem_limit: 300m
     volumes:
       - server-uploads:/repo/apps/server/uploads
     depends_on:
@@ -41,10 +49,12 @@ services:
         condition: service_healthy
 
   client:
+    image: tribastion-client:latest
     build:
       context: .
       dockerfile: apps/client/Dockerfile
     restart: unless-stopped
+    mem_limit: 64m
     expose:
       - "80"
     depends_on:
@@ -53,6 +63,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    mem_limit: 192m
     ports:
       - "80:80"
       - "443:443"
