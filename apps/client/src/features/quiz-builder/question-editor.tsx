@@ -46,11 +46,38 @@ export function QuestionEditor({ question, onChange }: Props) {
 
       <TypeSpecificFields question={question} onChange={onChange} />
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Time limit (seconds)</Label>
-          <Input type="number" min={3} max={600} value={question.timeLimitSeconds} onChange={(e) => patch({ timeLimitSeconds: Number(e.target.value) })} />
+      {/* Timer settings */}
+      <div className="space-y-3 rounded-md border border-input p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Timer</Label>
+            <p className="text-xs text-muted-foreground">
+              {question.timerEnabled !== false
+                ? "Auto-advances when time runs out"
+                : "Host advances manually — no countdown shown to participants"}
+            </p>
+          </div>
+          <Switch
+            checked={question.timerEnabled !== false}
+            onCheckedChange={(enabled) => patch({ timerEnabled: enabled })}
+          />
         </div>
+        {question.timerEnabled !== false && (
+          <div className="space-y-1.5">
+            <Label>Time limit (seconds)</Label>
+            <Input
+              type="number"
+              min={3}
+              max={600}
+              value={question.timeLimitSeconds}
+              onChange={(e) => patch({ timeLimitSeconds: Number(e.target.value) })}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="hidden" />
         {scored && (
           <div className="space-y-1.5">
             <Label>Base points</Label>
@@ -67,6 +94,7 @@ export function QuestionEditor({ question, onChange }: Props) {
             />
           </div>
         )}
+        <div />
       </div>
 
       {scored && (

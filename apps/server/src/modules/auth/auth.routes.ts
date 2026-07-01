@@ -10,15 +10,17 @@ import { authController } from "@/modules/auth/auth.controller";
 import { validate } from "@/middleware/validate.middleware";
 import { requireAuth, requireRole } from "@/middleware/auth.middleware";
 import { authRateLimiter } from "@/middleware/security.middleware";
-import { doubleCsrfProtection } from "@/middleware/csrf.middleware";
 import { asyncHandler } from "@/lib/async-handler";
 
 export const authRouter = Router();
 
 authRouter.post("/login", authRateLimiter, validate({ body: loginSchema }), asyncHandler(authController.login));
-// refresh/logout rely on the ambient refresh-token cookie, so they're the only routes that need CSRF double-submit defense.
-authRouter.post("/refresh", doubleCsrfProtection, asyncHandler(authController.refresh));
-authRouter.post("/logout", doubleCsrfProtection, asyncHandler(authController.logout));
+// SameSite=strict on the refresh cookie is the actual CSRF defence — a cross-site attacker
+// can't trigger a request that includes a SameSite=strict cookie, so CSRF double-submit
+// middleware is not needed (and was causing 403s when the __Host- prefix interacted badly
+// with the Cloudflare → Caddy → nginx → Express reverse-proxy chain on refresh).
+authRouter.post("/refresh", asyncHandler(authController.refresh));
+authRouter.post("/logout", asyncHandler(authController.logout));
 authRouter.get("/me", requireAuth, asyncHandler(authController.me));
 
 authRouter.post(

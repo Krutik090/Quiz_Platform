@@ -97,7 +97,9 @@ export class QuizEngine {
 
     await eventRepository.updateStatus(eventId, { status: EventStatus.QUESTION_ACTIVE, currentQuestionIndex: rt.currentIndex });
 
-    const endsAtMs = rt.questionStartedAtMs + question.timeLimitSeconds * 1000;
+    const timerEnabled = question.timerEnabled !== false;
+    const endsAtMs = timerEnabled ? rt.questionStartedAtMs + question.timeLimitSeconds * 1000 : undefined;
+
     const snapshot: EventStateSnapshot = {
       eventId,
       status: rt.status,
@@ -109,9 +111,12 @@ export class QuizEngine {
     };
     this.io.to(roomName(eventId)).emit(SocketEvent.QUESTION_STARTED, snapshot);
 
-    rt.timer = setTimeout(() => {
-      this.endQuestion(eventId).catch((err) => logger.error({ err, eventId }, "Failed to end question on timer expiry"));
-    }, question.timeLimitSeconds * 1000);
+    if (timerEnabled) {
+      rt.timer = setTimeout(() => {
+        this.endQuestion(eventId).catch((err) => logger.error({ err, eventId }, "Failed to end question on timer expiry"));
+      }, question.timeLimitSeconds * 1000);
+    }
+    // timerEnabled === false: no automatic progression — host must call requestNextQuestion
   }
 
   private async endQuestion(eventId: string): Promise<void> {
@@ -158,6 +163,16 @@ export class QuizEngine {
 
     this.io.to(roomName(eventId)).emit(SocketEvent.QUESTION_ENDED, { eventId, result });
 
+    const timerEnabled = question.timerEnabled !== false;
+
+    if (!timerEnabled) {
+      // Manual mode — stay in QUESTION_REVIEW and wait for the host to click Next.
+      rt.status = EventStatus.QUESTION_REVIEW;
+      await eventRepository.updateStatus(eventId, { status: EventStatus.QUESTION_REVIEW });
+      return;
+    }
+
+    // Auto-timer mode — advance automatically after showing leaderboard (or immediately).
     if (rt.settings.showLeaderboardAfterEachQuestion) {
       rt.status = EventStatus.LEADERBOARD;
       await eventRepository.updateStatus(eventId, { status: EventStatus.LEADERBOARD });
@@ -197,7 +212,8 @@ export class QuizEngine {
     }
 
     const responseTimeMs = Date.now() - rt.questionStartedAtMs;
-    if (responseTimeMs > question.timeLimitSeconds * 1000 + 500) {
+    const timerEnabled = question.timerEnabled !== false;
+    if (timerEnabled && responseTimeMs > question.timeLimitSeconds * 1000 + 500) {
       throw AppError.badRequest("Answer window has closed");
     }
 
@@ -230,11 +246,30 @@ export class QuizEngine {
     return rt;
   }
 
-  /** Host-triggered manual skip — ends the current question immediately instead of waiting for the timer. */
+  /**
+   * HOST_NEXT_QUESTION drives every manual transition:
+   *   QUESTION_ACTIVE  → endQuestion (scores, shows result)
+   *   QUESTION_REVIEW  → show leaderboard (if enabled) OR advance to next question
+   *   LEADERBOARD      → advance to next question
+   * This is the sole control for timer-disabled (manual) questions.
+   * For timer-enabled questions it also allows early skipping.
+   */
   async requestNextQuestion(eventId: string, hostId: string): Promise<void> {
     const rt = this.assertHost(eventId, hostId);
+
     if (rt.status === EventStatus.QUESTION_ACTIVE) {
       await this.endQuestion(eventId);
+
+    } else if (rt.status === EventStatus.QUESTION_REVIEW) {
+      if (rt.settings.showLeaderboardAfterEachQuestion) {
+        rt.status = EventStatus.LEADERBOARD;
+        await eventRepository.updateStatus(eventId, { status: EventStatus.LEADERBOARD });
+        const leaderboard = await leaderboardService.getLeaderboard(eventId);
+        this.io.to(roomName(eventId)).emit(SocketEvent.LEADERBOARD_UPDATE, leaderboard);
+      } else {
+        await this.advance(eventId);
+      }
+
     } else if (rt.status === EventStatus.LEADERBOARD) {
       if (rt.timer) clearTimeout(rt.timer);
       await this.advance(eventId);

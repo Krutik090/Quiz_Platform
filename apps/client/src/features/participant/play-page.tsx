@@ -106,14 +106,22 @@ export default function PlayPage() {
         </Card>
       )}
 
-      {status === EventStatus.QUESTION_ACTIVE && snapshot?.currentQuestion && snapshot.questionEndsAtMs && (
+      {status === EventStatus.QUESTION_ACTIVE && snapshot?.currentQuestion && (
         <Card className="animate-slide-up">
           <CardHeader>
             <p className="text-xs text-muted-foreground">
               Question {snapshot.questionIndex + 1} of {snapshot.totalQuestions}
+              {snapshot.currentQuestion.timerEnabled === false && (
+                <span className="ml-2 text-amber-400">· no timer</span>
+              )}
             </p>
             <CardTitle className="text-xl">{snapshot.currentQuestion.prompt}</CardTitle>
-            <QuestionTimer endsAtMs={snapshot.questionEndsAtMs} totalMs={snapshot.currentQuestion.timeLimitSeconds * 1000} />
+            {snapshot.questionEndsAtMs && snapshot.currentQuestion.timerEnabled !== false && (
+              <QuestionTimer
+                endsAtMs={snapshot.questionEndsAtMs}
+                totalMs={snapshot.currentQuestion.timeLimitSeconds * 1000}
+              />
+            )}
           </CardHeader>
           <CardContent>
             <QuestionPlayer question={snapshot.currentQuestion} disabled={!!lastAck} onSubmit={submitAnswer} />

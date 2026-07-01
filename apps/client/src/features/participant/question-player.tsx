@@ -49,7 +49,7 @@ export function QuestionPlayer({ question, disabled, onSubmit }: Props) {
       );
 
     case QuestionType.MULTIPLE_CHOICE:
-      return <MultipleChoicePlayer question={question} disabled={disabled} onSubmit={submit} />;
+      return <MultipleChoicePlayer question={question} disabled={disabled} onSubmit={(r) => submit(r)} />;
 
     case QuestionType.TRUE_FALSE:
       return (
@@ -111,10 +111,11 @@ type MultipleChoicePublicQuestion = Extract<
 type OrderingPublicQuestion = Extract<PublicQuestion, { type: typeof QuestionType.ORDERING }>;
 type MatchingPublicQuestion = Extract<PublicQuestion, { type: typeof QuestionType.MATCHING }>;
 
-function MultipleChoicePlayer({ question, disabled, onSubmit }: { question: MultipleChoicePublicQuestion; disabled: boolean; onSubmit: (optionIds: string[]) => void }) {
+function MultipleChoicePlayer({ question, disabled, onSubmit }: { question: MultipleChoicePublicQuestion; disabled: boolean; onSubmit: (response: { optionIds: string[] }) => void }) {
   const [selected, setSelected] = useState<string[]>([]);
   return (
     <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Select all that apply</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {question.options?.map((opt, i) => (
           <button
@@ -124,15 +125,15 @@ function MultipleChoicePlayer({ question, disabled, onSubmit }: { question: Mult
             className={cn(
               "rounded-lg border-2 p-4 text-left text-base font-medium transition-transform active:scale-95",
               OPTION_COLORS[i % OPTION_COLORS.length],
-              selected.includes(opt.id) && "ring-2 ring-white",
+              selected.includes(opt.id) && "ring-2 ring-white ring-offset-2 ring-offset-background",
             )}
           >
             {opt.text}
           </button>
         ))}
       </div>
-      <Button className="w-full" disabled={disabled || selected.length === 0} onClick={() => onSubmit(selected)}>
-        Submit answer
+      <Button className="w-full" disabled={disabled || selected.length === 0} onClick={() => onSubmit({ optionIds: selected })}>
+        Submit {selected.length > 0 ? `(${selected.length} selected)` : ""}
       </Button>
     </div>
   );

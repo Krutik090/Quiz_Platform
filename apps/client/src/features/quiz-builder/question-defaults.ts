@@ -15,6 +15,7 @@ const baseDefaults = (order: number) => ({
   id: newId(),
   prompt: "",
   timeLimitSeconds: 20,
+  timerEnabled: true,
   points: 1000,
   scoring: { ...defaultScoring },
   order,

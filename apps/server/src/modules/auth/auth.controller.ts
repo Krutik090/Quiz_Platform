@@ -4,9 +4,13 @@ import { authRepository } from "@/modules/auth/auth.repository";
 import { AppError } from "@/lib/app-error";
 import { env, isProduction } from "@/config/env";
 
-const REFRESH_COOKIE_NAME = isProduction ? "__Host-refreshToken" : "refreshToken";
+// A plain name (no __Host- prefix) avoids the extra constraints that prefix imposes when
+// requests flow through a Cloudflare → Caddy → nginx → Express reverse-proxy chain.
+// SameSite=strict is the actual CSRF defence on these routes — the __Host- prefix would
+// only add protection against subdomain cookie theft, which is not a threat in this
+// single-domain deployment.
+const REFRESH_COOKIE_NAME = "refreshToken";
 
-// __Host- prefixed cookies require Path=/ and no Domain attribute, per the cookie prefix spec.
 const refreshCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProduction,

@@ -53,6 +53,8 @@ export interface QuestionBase {
   prompt: string;
   media?: MediaAsset;
   timeLimitSeconds: number;
+  /** When false the timer is hidden and the host must advance manually. Absent means enabled. */
+  timerEnabled?: boolean;
   points: number;
   scoring: ScoringConfig;
   order: number;

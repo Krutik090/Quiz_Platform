@@ -20,6 +20,7 @@ const baseFields = {
   prompt: z.string().trim().min(1).max(2000),
   media: mediaSchema.optional(),
   timeLimitSeconds: z.number().int().min(3).max(600),
+  timerEnabled: z.boolean().default(true),
   points: z.number().int().min(0).max(10000),
   scoring: scoringSchema,
   order: z.number().int().min(0),

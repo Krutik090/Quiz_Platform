@@ -6,15 +6,6 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-let csrfToken: string | null = null;
-
-export async function ensureCsrfToken(): Promise<string> {
-  if (csrfToken) return csrfToken;
-  const { data } = await axios.get<{ csrfToken: string }>("/api/csrf-token", { withCredentials: true });
-  csrfToken = data.csrfToken;
-  return csrfToken;
-}
-
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -25,11 +16,10 @@ let refreshPromise: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
   try {
-    const token = await ensureCsrfToken();
     const { data } = await axios.post<{ accessToken: string }>(
       "/api/auth/refresh",
       {},
-      { withCredentials: true, headers: { "X-CSRF-Token": token } },
+      { withCredentials: true },
     );
     useAuthStore.getState().setAccessToken(data.accessToken);
     return data.accessToken;

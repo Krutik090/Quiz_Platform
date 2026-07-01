@@ -1,5 +1,5 @@
 import type { SafeAdminUser } from "@tribastion/shared";
-import { apiClient, ensureCsrfToken } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 
 export interface LoginPayload {
   email: string;
@@ -14,8 +14,7 @@ export const authApi = {
   },
 
   async logout() {
-    const token = await ensureCsrfToken();
-    await apiClient.post("/auth/logout", {}, { headers: { "X-CSRF-Token": token } });
+    await apiClient.post("/auth/logout", {});
   },
 
   async me() {
